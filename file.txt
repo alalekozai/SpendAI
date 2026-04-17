@@ -7,3 +7,48 @@ Both should be plain text links, with no special styling needed for now.
 Point both to "#" as placeholder hrefs since the pages don’t exist yet.
 
 Do not modify anything else on the page.
+
+git commit -m "landing: add Terms and Privacy links to footer"
+
+Create a "Terms and Conditions" page for Spendly
+1.Add a new route in [@app.py] (http://app.py/):
+GET /terms • renders templates/terms.html
+2. Create templates/terms.html with generic Terms and Conditions content appropriate for a personal expense tracking app.
+Include sections like Acceptance of Terms, Use of Service, User Data, Limitations of Liability, and Changes to Terms.
+Extend base.html if it exists, otherwise match the style of landing.html.
+3. In @templates/landing.html, update the "Terms and Conditions"
+footer link href from "#" to "/terms".
+
+git add .
+git commit -m "landing: add terms and conditions page and route"
+
+do the same as you did for the Terms and Conditions page, but this time for the Privacy Policy.
+1.Add a new route in [@app.py] (http://app.py/):
+GET /Privacy -> renders templates/privacy.html
+2. Create templates/privacy.html with generic Terms and Conditions content appropriate for a personal expense tracking app.
+Include sections like: data we collect, how we use your data, data storage, third party Service and contect Us, match the style of terms.html. landing.html.
+3. In @templates/landing.html, update the "privacy Policy"
+footer link href from "#" to "/privacy".
+4. make sure the apperance looks like the website theme
+
+git commit -m "landing: add privacy policy page and route"
+
+Modify only the hero section in the @templates/landing.html and @statics/css/landing.css
+to match this image exactly. do not touch any other part of the page.
+
+git commit -m "landing: redesign hero section and match mockup"
+
+Add a modal to @templates/landing.html that opens when the user clicks
+"See how it works".
+
+Requirements:
+- Clicking "See how it works" opens a modal overlay
+- Modal contains an embedded YouTube video (use any placeholder YouTube URL for now, I will replace it later)
+- Video should be playable inside the modal
+- Clicking the close button OR clicking outside the modal closes it
+- When the modal closes, the video must stop playing (not continue in background)
+- No page libraries or dependencies - vanilla JS only, since we are not using any JS framework in this project
+
+Do not modify any other part of the page.
+
+git commit -m "landing: add youtube modal on see how it works click"
