@@ -1,7 +1,9 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+import re
+from flask import Flask, render_template, session, redirect, url_for, flash, request
+from database.db import init_db, seed_db, create_user, get_user_by_email
 
 app = Flask(__name__)
+app.secret_key = "dev-secret-key-change-in-prod"
 
 with app.app_context():
     init_db()
@@ -17,8 +19,38 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not all([name, email, password, confirm_password]):
+            flash("All fields are required.")
+            return render_template("register.html", form=request.form)
+
+        if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$', email):
+            flash("Enter a valid email address.")
+            return render_template("register.html", form=request.form)
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.")
+            return render_template("register.html", form=request.form)
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return render_template("register.html", form=request.form)
+
+        if get_user_by_email(email):
+            flash("An account with that email already exists.")
+            return render_template("register.html", form=request.form)
+
+        user_id = create_user(name, email, password)
+        session["user_id"] = user_id
+        return redirect(url_for("dashboard"))
+
     return render_template("register.html")
 
 
@@ -39,6 +71,11 @@ def terms():
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return "Dashboard — coming in Step 5"
 
 
 @app.route("/logout")

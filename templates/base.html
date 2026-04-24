@@ -26,6 +26,13 @@
     </nav>
 
     <main class="main-content">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for msg in messages %}
+              <div class="auth-error">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 
