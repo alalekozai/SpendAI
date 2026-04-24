@@ -1,5 +1,6 @@
 import re
 from flask import Flask, render_template, session, redirect, url_for, flash, request
+from werkzeug.security import check_password_hash
 from database.db import init_db, seed_db, create_user, get_user_by_email
 
 app = Flask(__name__)
@@ -21,6 +22,9 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
@@ -54,8 +58,27 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("All fields are required.")
+            return render_template("login.html", form=request.form)
+
+        user = get_user_by_email(email)
+        if user is None or not check_password_hash(user["password"], password):
+            flash("Invalid email or password.")
+            return render_template("login.html", form=request.form)
+
+        session["user_id"] = user["id"]
+        return redirect(url_for("landing"))
+
     return render_template("login.html")
 
 
@@ -80,7 +103,8 @@ def dashboard():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
