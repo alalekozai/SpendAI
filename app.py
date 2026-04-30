@@ -24,7 +24,10 @@ def landing():
 def register():
     if session.get("user_id"):
         return redirect(url_for("landing"))
+<<<<<<< HEAD
 
+=======
+>>>>>>> d5a8a221d5014fa05985dc9488a3f5b2227cf32d
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
