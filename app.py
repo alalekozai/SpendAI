@@ -23,7 +23,8 @@ def landing():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if session.get("user_id"):
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
+
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
@@ -60,7 +61,7 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("user_id"):
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "POST":
         email = request.form.get("email", "").strip()
@@ -76,7 +77,7 @@ def login():
             return render_template("login.html", form=request.form)
 
         session["user_id"] = user["id"]
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     return render_template("login.html")
 
@@ -108,7 +109,38 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    user = {
+        "name":         "Nitish Kumar",
+        "email":        "nitish@example.com",
+        "member_since": "January 2026",
+        "initials":     "NK",
+    }
+    stats = {
+        "total_spent":  "₹5,148",
+        "tx_count":     8,
+        "top_category": "Utilities",
+    }
+    transactions = [
+        {"date": "15 Apr 2026", "description": "Books",          "category": "Education",     "amount": "₹450.00"},
+        {"date": "13 Apr 2026", "description": "Uber",           "category": "Transport",     "amount": "₹320.00"},
+        {"date": "11 Apr 2026", "description": "Gym membership", "category": "Health",        "amount": "₹999.00"},
+        {"date": "10 Apr 2026", "description": "Lunch",          "category": "Food",          "amount": "₹180.00"},
+        {"date": "05 Apr 2026", "description": "Electricity",    "category": "Utilities",     "amount": "₹1,200.00"},
+    ]
+    categories = [
+        {"name": "Utilities",     "total": "₹1,200", "pct": 85},
+        {"name": "Food",          "total": "₹1,030", "pct": 73},
+        {"name": "Health",        "total": "₹999",   "pct": 71},
+        {"name": "Transport",     "total": "₹820",   "pct": 58},
+        {"name": "Entertainment", "total": "₹649",   "pct": 46},
+        {"name": "Education",     "total": "₹450",   "pct": 32},
+    ]
+    return render_template("profile.html",
+                           user=user, stats=stats,
+                           transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
