@@ -1,0 +1,57 @@
+---
+description: Seed realistic dummy expenses for a specific user
+argument-hint: "<user_id> <count> <months>"
+allowed-tools: Read, Bash(python3:*)
+---
+
+Read database/db.py to understand the expenses table 
+schema, the db connection pattern, and the database 
+file name.
+
+User input: $ARGUMENTS
+
+## Step 1 — Parse arguments
+
+Extract from $ARGUMENTS:
+- user_id — integer
+- count — integer, number of expenses to create
+- months — integer, how many past months to spread them across
+
+If any argument is missing or not a valid integer, stop and say:
+"Usage: /seed-expense <user_id> <count> <months>
+Example: /seed-expense 1 50 6"
+
+## Step 2 — Verify user exists
+
+Before generating anything, confirm the user_id exists 
+in the users table. If not, stop and say:
+"No user found with id <user_id>."
+
+## Step 3 — Generate and insert expenses
+
+Write and run a Python script that:
+
+1. Spreads expenses randomly across the past <months> months
+2. Uses these categories with realistic Indian descriptions 
+   and amounts (₹):
+   - Food: 40–800 (most common, weight 5)
+   - Transport: 20–800 (weight 4)
+   - Bills: 179–2000 (weight 3)
+   - Shopping: 200–5000 (weight 3)
+   - Health: 100–1500 (weight 2)
+   - Entertainment: 59–649 (weight 2)
+   - Other: 50–1000 (weight 1)
+3. Uses a weighted pool so Food is most common and 
+   Other is least common
+4. Uses the db connection pattern from db.py — import 
+   get_db() directly, do not hardcode the database path
+5. Uses parameterised queries only — no string formatting in SQL
+6. Inserts all expenses in a single transaction — 
+   roll back everything if any insert fails
+
+## Step 4 — Confirm
+
+Print:
+- How many expenses were inserted
+- The date range they span
+- A sample of 5 inserted records (date, category, title, amount)
