@@ -1,7 +1,13 @@
 import re
-from flask import Flask, render_template, session, redirect, url_for, flash, request
-from werkzeug.security import check_password_hash
-from database.db import init_db, seed_db, create_user, get_user_by_email
+import random
+from datetime import date, timedelta
+from flask import Flask, render_template, session, redirect, url_for, flash, request, jsonify
+from werkzeug.security import check_password_hash, generate_password_hash
+from database.db import init_db, seed_db, create_user, get_user_by_email, get_db
+from database.queries import (
+    get_user_by_id, get_summary_stats,
+    get_recent_transactions, get_category_breakdown,
+)
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-prod"
@@ -112,32 +118,15 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
-    user = {
-        "name":         "Nitish Kumar",
-        "email":        "nitish@example.com",
-        "member_since": "January 2026",
-        "initials":     "NK",
-    }
-    stats = {
-        "total_spent":  "₹5,148",
-        "tx_count":     8,
-        "top_category": "Utilities",
-    }
-    transactions = [
-        {"date": "15 Apr 2026", "description": "Books",          "category": "Education",     "amount": "₹450.00"},
-        {"date": "13 Apr 2026", "description": "Uber",           "category": "Transport",     "amount": "₹320.00"},
-        {"date": "11 Apr 2026", "description": "Gym membership", "category": "Health",        "amount": "₹999.00"},
-        {"date": "10 Apr 2026", "description": "Lunch",          "category": "Food",          "amount": "₹180.00"},
-        {"date": "05 Apr 2026", "description": "Electricity",    "category": "Utilities",     "amount": "₹1,200.00"},
-    ]
-    categories = [
-        {"name": "Utilities",     "total": "₹1,200", "pct": 85},
-        {"name": "Food",          "total": "₹1,030", "pct": 73},
-        {"name": "Health",        "total": "₹999",   "pct": 71},
-        {"name": "Transport",     "total": "₹820",   "pct": 58},
-        {"name": "Entertainment", "total": "₹649",   "pct": 46},
-        {"name": "Education",     "total": "₹450",   "pct": 32},
-    ]
+    user = get_user_by_id(session["user_id"])
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    stats        = get_summary_stats(session["user_id"])
+    transactions = get_recent_transactions(session["user_id"])
+    categories   = get_category_breakdown(session["user_id"])
+
     return render_template("profile.html",
                            user=user, stats=stats,
                            transactions=transactions, categories=categories)
@@ -156,6 +145,81 @@ def edit_expense(id):
 @app.route("/expenses/<int:id>/delete")
 def delete_expense(id):
     return "Delete expense — coming in Step 9"
+
+
+@app.route("/seed-expenses/<int:num_users>/<int:min_exp>/<int:max_exp>")
+def seed_expenses(num_users, min_exp, max_exp):
+    _FIRST_NAMES = [
+        "Aarav", "Aditi", "Amit", "Ananya", "Arun", "Deepa", "Divya",
+        "Ishaan", "Kavya", "Kiran", "Meera", "Mohan", "Neha", "Priya",
+        "Rahul", "Riya", "Rohan", "Sana", "Sneha", "Suresh", "Vikram",
+    ]
+    _LAST_NAMES = [
+        "Agarwal", "Bhat", "Chaudhary", "Das", "Gupta", "Iyer", "Joshi",
+        "Kumar", "Mehta", "Nair", "Patel", "Rao", "Reddy", "Sharma",
+        "Singh", "Verma",
+    ]
+    _EXPENSES = [
+        ("Groceries",      "Food",          300,  900),
+        ("Restaurant",     "Food",          150,  600),
+        ("Coffee",         "Food",           80,  200),
+        ("Metro card",     "Transport",     200,  600),
+        ("Uber",           "Transport",     100,  400),
+        ("Petrol",         "Transport",     400, 1200),
+        ("Netflix",        "Entertainment", 199,  649),
+        ("Movie tickets",  "Entertainment", 200,  500),
+        ("Spotify",        "Entertainment",  59,  199),
+        ("Electricity",    "Utilities",     600, 2000),
+        ("Internet",       "Utilities",     500, 1200),
+        ("Mobile recharge","Utilities",     179,  599),
+        ("Gym membership", "Health",        500, 1500),
+        ("Doctor visit",   "Health",        300,  800),
+        ("Medicine",       "Health",        100,  500),
+        ("Books",          "Education",     200,  800),
+        ("Online course",  "Education",     500, 2000),
+        ("Clothing",       "Shopping",      500, 3000),
+        ("Electronics",    "Shopping",     1000, 8000),
+    ]
+
+    conn = get_db()
+    created = []
+
+    for _ in range(num_users):
+        # generate unique email
+        for _attempt in range(20):
+            name = f"{random.choice(_FIRST_NAMES)} {random.choice(_LAST_NAMES)}"
+            suffix = random.randint(10, 99)
+            email = f"{name.split()[0].lower()}.{name.split()[1].lower()}{suffix}@example.com"
+            if not conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+                break
+
+        pw = generate_password_hash("password123", method="pbkdf2:sha256")
+        conn.execute(
+            "INSERT INTO users (name, email, password) VALUES (?,?,?)",
+            (name, email, pw),
+        )
+        conn.commit()
+        user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        n_exp = random.randint(min_exp, max_exp)
+        expenses = []
+        for _ in range(n_exp):
+            title, category, lo, hi = random.choice(_EXPENSES)
+            amount = round(random.uniform(lo, hi), 2)
+            days_ago = random.randint(0, 90)
+            exp_date = (date.today() - timedelta(days=days_ago)).isoformat()
+            expenses.append((user_id, title, amount, category, exp_date, ""))
+
+        conn.executemany(
+            "INSERT INTO expenses (user_id, title, amount, category, date, description)"
+            " VALUES (?,?,?,?,?,?)",
+            expenses,
+        )
+        conn.commit()
+        created.append({"id": user_id, "name": name, "email": email, "expenses": n_exp})
+
+    conn.close()
+    return jsonify({"seeded": created})
 
 
 if __name__ == "__main__":
