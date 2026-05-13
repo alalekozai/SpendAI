@@ -27,12 +27,40 @@
             </div>
         </div>
 
+        <!-- Date filter bar -->
+        <div class="profile-filter-bar">
+            <div class="filter-presets">
+                <a href="{{ url_for('profile', date_from=preset_dates['this_month'][0], date_to=preset_dates['this_month'][1]) }}"
+                   class="filter-btn{% if active_preset == 'this_month' %} filter-btn--active{% endif %}">
+                    This Month
+                </a>
+                <a href="{{ url_for('profile', date_from=preset_dates['3months'][0], date_to=preset_dates['3months'][1]) }}"
+                   class="filter-btn{% if active_preset == '3months' %} filter-btn--active{% endif %}">
+                    Last 3 Months
+                </a>
+                <a href="{{ url_for('profile', date_from=preset_dates['6months'][0], date_to=preset_dates['6months'][1]) }}"
+                   class="filter-btn{% if active_preset == '6months' %} filter-btn--active{% endif %}">
+                    Last 6 Months
+                </a>
+                <a href="{{ url_for('profile') }}"
+                   class="filter-btn{% if active_preset == 'all' %} filter-btn--active{% endif %}">
+                    All Time
+                </a>
+            </div>
+            <form class="filter-custom" method="GET" action="{{ url_for('profile') }}">
+                <input type="date" name="date_from" value="{{ date_from or '' }}">
+                <span class="filter-to-label">to</span>
+                <input type="date" name="date_to" value="{{ date_to or '' }}">
+                <button type="submit" class="filter-btn{% if active_preset == 'custom' %} filter-btn--active{% endif %}">Apply</button>
+            </form>
+        </div>
+
         <!-- Summary stats -->
         <div class="mock-stats-row">
             <div class="mock-stat">
                 <span class="mock-stat-label">Total Spent</span>
                 <span class="mock-stat-value">{{ stats.total_spent }}</span>
-                <span class="mock-stat-sub">all time</span>
+                <span class="mock-stat-sub">{{ 'filtered' if date_from else 'all time' }}</span>
             </div>
             <div class="mock-stat">
                 <span class="mock-stat-label">Transactions</span>
