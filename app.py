@@ -1,6 +1,6 @@
 import re
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from flask import Flask, render_template, session, redirect, url_for, flash, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from database.db import init_db, seed_db, create_user, get_user_by_email, get_db
@@ -123,13 +123,50 @@ def profile():
         session.clear()
         return redirect(url_for("login"))
 
-    stats        = get_summary_stats(session["user_id"])
-    transactions = get_recent_transactions(session["user_id"])
-    categories   = get_category_breakdown(session["user_id"])
+    raw_from = request.args.get("date_from", "")
+    raw_to   = request.args.get("date_to", "")
+    today    = date.today()
+
+    # Pre-compute preset date ranges so the template can embed them in links
+    preset_dates = {
+        "this_month": (today.replace(day=1).isoformat(), today.isoformat()),
+        "3months":    ((today - timedelta(days=90)).isoformat(), today.isoformat()),
+        "6months":    ((today - timedelta(days=180)).isoformat(), today.isoformat()),
+    }
+
+    date_from = date_to = None
+
+    if raw_from or raw_to:
+        try:
+            if not raw_from or not raw_to:
+                raise ValueError("Both dates required")
+            date_from = datetime.strptime(raw_from, "%Y-%m-%d").date().isoformat()
+            date_to   = datetime.strptime(raw_to,   "%Y-%m-%d").date().isoformat()
+            if date_from > date_to:
+                flash("Start date must be before end date.")
+                date_from = date_to = None
+        except ValueError:
+            date_from = date_to = None
+
+    # Detect which preset (if any) matches the active date range
+    active_preset = "all"
+    if date_from and date_to:
+        matched = next(
+            (name for name, (f, t) in preset_dates.items() if f == date_from and t == date_to),
+            None,
+        )
+        active_preset = matched if matched else "custom"
+
+    stats        = get_summary_stats(session["user_id"], date_from, date_to)
+    transactions = get_recent_transactions(session["user_id"], date_from=date_from, date_to=date_to)
+    categories   = get_category_breakdown(session["user_id"], date_from, date_to)
 
     return render_template("profile.html",
                            user=user, stats=stats,
-                           transactions=transactions, categories=categories)
+                           transactions=transactions, categories=categories,
+                           date_from=date_from, date_to=date_to,
+                           active_preset=active_preset,
+                           preset_dates=preset_dates)
 
 
 @app.route("/expenses/add")

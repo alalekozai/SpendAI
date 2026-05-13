@@ -3,6 +3,13 @@ from datetime import datetime
 from database.db import get_db
 
 
+def _apply_date_filter(sql, params, date_from, date_to):
+    if date_from and date_to:
+        sql += " AND date BETWEEN ? AND ?"
+        params += [date_from, date_to]
+    return sql, params
+
+
 def get_user_by_id(user_id):
     conn = get_db()
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -18,11 +25,13 @@ def get_user_by_id(user_id):
     }
 
 
-def get_summary_stats(user_id):
+def get_summary_stats(user_id, date_from=None, date_to=None):
     conn = get_db()
-    rows = conn.execute(
-        "SELECT amount, category FROM expenses WHERE user_id = ?", (user_id,)
-    ).fetchall()
+    sql, params = _apply_date_filter(
+        "SELECT amount, category FROM expenses WHERE user_id = ?",
+        [user_id], date_from, date_to,
+    )
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     if not rows:
         return {"total_spent": "₹0.00", "tx_count": 0, "top_category": "—"}
@@ -38,13 +47,15 @@ def get_summary_stats(user_id):
     }
 
 
-def get_recent_transactions(user_id, limit=10):
+def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     conn = get_db()
-    rows = conn.execute(
-        "SELECT title, amount, category, date FROM expenses "
-        "WHERE user_id = ? ORDER BY date DESC LIMIT ?",
-        (user_id, limit),
-    ).fetchall()
+    sql, params = _apply_date_filter(
+        "SELECT title, amount, category, date FROM expenses WHERE user_id = ?",
+        [user_id], date_from, date_to,
+    )
+    sql += " ORDER BY date DESC LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     result = []
     for r in rows:
@@ -58,13 +69,14 @@ def get_recent_transactions(user_id, limit=10):
     return result
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, date_from=None, date_to=None):
     conn = get_db()
-    rows = conn.execute(
-        "SELECT category, SUM(amount) as total FROM expenses "
-        "WHERE user_id = ? GROUP BY category ORDER BY total DESC",
-        (user_id,),
-    ).fetchall()
+    sql, params = _apply_date_filter(
+        "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ?",
+        [user_id], date_from, date_to,
+    )
+    sql += " GROUP BY category ORDER BY total DESC"
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     if not rows:
         return []
