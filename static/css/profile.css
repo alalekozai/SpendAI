@@ -81,6 +81,29 @@
     gap: 1rem;
 }
 
+.profile-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.btn-add-expense {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--paper-card);
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.9rem;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.btn-add-expense:hover {
+    opacity: 0.85;
+}
+
 .profile-section-title {
     font-family: var(--font-display);
     font-size: 1.25rem;
