@@ -1,4 +1,6 @@
+import os
 import re
+import math
 import random
 from datetime import date, datetime, timedelta
 from flask import Flask, render_template, session, redirect, url_for, flash, request, jsonify
@@ -7,10 +9,11 @@ from database.db import init_db, seed_db, create_user, get_user_by_email, get_db
 from database.queries import (
     get_user_by_id, get_summary_stats,
     get_recent_transactions, get_category_breakdown,
+    insert_expense,
 )
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-key-change-in-prod"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
 
 with app.app_context():
     init_db()
@@ -169,9 +172,62 @@ def profile():
                            preset_dates=preset_dates)
 
 
-@app.route("/expenses/add")
+@app.route("/analytics")
+def analytics():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
+VALID_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+
+
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        amount_raw  = request.form.get("amount", "").strip()
+        category    = request.form.get("category", "").strip()
+        date_raw    = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip() or None
+
+        error = None
+        amount = None
+
+        try:
+            amount = float(amount_raw)
+            if amount <= 0 or math.isinf(amount) or math.isnan(amount):
+                raise ValueError
+        except ValueError:
+            error = "Amount must be a positive number."
+
+        if not error and category not in VALID_CATEGORIES:
+            error = "Please select a valid category."
+
+        if not error:
+            try:
+                datetime.strptime(date_raw, "%Y-%m-%d")
+            except ValueError:
+                error = "Please enter a valid date."
+
+        if not error and description and len(description) > 200:
+            error = "Description must be 200 characters or fewer."
+
+        if error:
+            flash(error)
+            return render_template("add_expense.html", form=request.form,
+                                   categories=VALID_CATEGORIES)
+
+        insert_expense(session["user_id"], amount, category, date_raw, description)
+        flash("Expense added successfully.")
+        return redirect(url_for("profile"))
+
+    return render_template("add_expense.html",
+                           form={},
+                           categories=VALID_CATEGORIES,
+                           today=date.today().isoformat())
 
 
 @app.route("/expenses/<int:id>/edit")

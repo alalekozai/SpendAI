@@ -93,3 +93,17 @@ def get_category_breakdown(user_id, date_from=None, date_to=None):
     if diff and result:
         result[0]["pct"] += diff
     return result
+
+
+def insert_expense(user_id, amount, category, date, description):
+    conn = get_db()
+    title = description or category
+    conn.execute(
+        "INSERT INTO expenses (user_id, title, amount, category, date, description)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, title, amount, category, date, description),
+    )
+    conn.commit()
+    expense_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return expense_id
