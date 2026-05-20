@@ -3,9 +3,9 @@ import re
 import math
 import random
 from datetime import date, datetime, timedelta
-from flask import Flask, render_template, session, redirect, url_for, flash, request, jsonify
+from flask import Flask, render_template, session, redirect, url_for, flash, request, jsonify, abort
 from werkzeug.security import check_password_hash, generate_password_hash
-from database.db import init_db, seed_db, create_user, get_user_by_email, get_db
+from database.db import init_db, seed_db, create_user, get_user_by_email, get_db, get_expense_by_id, update_expense
 from database.queries import (
     get_user_by_id, get_summary_stats,
     get_recent_transactions, get_category_breakdown,
@@ -230,9 +230,67 @@ def add_expense():
                            today=date.today().isoformat())
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id)
+    if expense is None:
+        abort(404)
+    if expense["user_id"] != session["user_id"]:
+        abort(403)
+
+    if request.method == "POST":
+        title_raw   = request.form.get("title", "").strip()
+        amount_raw  = request.form.get("amount", "").strip()
+        category    = request.form.get("category", "").strip()
+        date_raw    = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip() or None
+
+        error = None
+        amount = None
+
+        if not title_raw:
+            error = "Title is required."
+        elif len(title_raw) > 100:
+            error = "Title must be 100 characters or fewer."
+
+        if not error:
+            try:
+                amount = float(amount_raw)
+                if amount <= 0 or math.isinf(amount) or math.isnan(amount):
+                    raise ValueError
+            except ValueError:
+                error = "Amount must be a positive number."
+
+        if not error and category not in VALID_CATEGORIES:
+            error = "Please select a valid category."
+
+        if not error:
+            try:
+                datetime.strptime(date_raw, "%Y-%m-%d")
+            except ValueError:
+                error = "Please enter a valid date."
+
+        if not error and description and len(description) > 200:
+            error = "Description must be 200 characters or fewer."
+
+        if error:
+            flash(error)
+            return render_template("edit_expense.html",
+                                   form=request.form,
+                                   expense=expense,
+                                   categories=VALID_CATEGORIES)
+
+        update_expense(id, title_raw, amount, category, date_raw, description)
+        flash("Expense updated successfully.")
+        return redirect(url_for("profile"))
+
+    return render_template("edit_expense.html",
+                           form=expense,
+                           expense=expense,
+                           categories=VALID_CATEGORIES)
 
 
 @app.route("/expenses/<int:id>/delete")
