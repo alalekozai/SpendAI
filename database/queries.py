@@ -50,7 +50,7 @@ def get_summary_stats(user_id, date_from=None, date_to=None):
 def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     conn = get_db()
     sql, params = _apply_date_filter(
-        "SELECT title, amount, category, date FROM expenses WHERE user_id = ?",
+        "SELECT id, title, amount, category, date FROM expenses WHERE user_id = ?",
         [user_id], date_from, date_to,
     )
     sql += " ORDER BY date DESC LIMIT ?"
@@ -61,6 +61,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     for r in rows:
         d = datetime.strptime(r["date"], "%Y-%m-%d")
         result.append({
+            "id": r["id"],
             "date": d.strftime("%d %b %Y"),
             "description": r["title"],
             "category": r["category"],
