@@ -34,14 +34,14 @@ def get_summary_stats(user_id, date_from=None, date_to=None):
     rows = conn.execute(sql, params).fetchall()
     conn.close()
     if not rows:
-        return {"total_spent": "₹0.00", "tx_count": 0, "top_category": "—"}
+        return {"total_spent": "$0.00", "tx_count": 0, "top_category": "—"}
     total = sum(r["amount"] for r in rows)
     cat_totals = {}
     for r in rows:
         cat_totals[r["category"]] = cat_totals.get(r["category"], 0) + r["amount"]
     top_cat = max(cat_totals, key=cat_totals.get)
     return {
-        "total_spent": f"₹{total:,.2f}",
+        "total_spent": f"${total:,.2f}",
         "tx_count": len(rows),
         "top_category": top_cat,
     }
@@ -65,7 +65,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
             "date": d.strftime("%d %b %Y"),
             "description": r["title"],
             "category": r["category"],
-            "amount": f"₹{r['amount']:,.2f}",
+            "amount": f"${r['amount']:,.2f}",
         })
     return result
 
@@ -85,7 +85,7 @@ def get_category_breakdown(user_id, date_from=None, date_to=None):
     result = [
         {
             "name": r["category"],
-            "total": f"₹{r['total']:,.2f}",
+            "total": f"${r['total']:,.2f}",
             "pct": int(r["total"] / grand_total * 100),
         }
         for r in rows
