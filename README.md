@@ -1,1 +1,1 @@
-# spendly
+# spendAI
