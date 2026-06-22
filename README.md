@@ -15,7 +15,8 @@ Soon
 
 | Dashboard | Add Expense | Analytics |
 |-----------|-------------|-----------|
-| ![Dashboard](![Uploading 1781045536272.jpeg…]()
+<img width="2048" height="1335" alt="1781045536272" src="https://github.com/user-attachments/assets/33a44c32-3aeb-49d9-a436-03ec34ef89e6" />
+
 ) | ![Add](docs/screenshots/add-expense.png) | ![Analytics](docs/screenshots/analytics.png) |
 
 ---
