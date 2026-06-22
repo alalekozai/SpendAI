@@ -91,6 +91,8 @@ Database schema design with SQLite and SQLAlchemy
 Frontend-backend integration without a JavaScript framework
 Using AI-assisted development (Claude Code) to accelerate coding workflows
 The importance of clean project structure for maintainability
+
+
 Future Improvements
 [ ] Migrate to PostgreSQL for production
 [ ] Add user authentication (JWT or OAuth)
