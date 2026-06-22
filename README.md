@@ -15,7 +15,8 @@ Soon
 
 | Dashboard | Add Expense | Analytics |
 |-----------|-------------|-----------|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Add](docs/screenshots/add-expense.png) | ![Analytics](docs/screenshots/analytics.png) |
+| ![Dashboard](![Uploading 1781045536272.jpeg…]()
+) | ![Add](docs/screenshots/add-expense.png) | ![Analytics](docs/screenshots/analytics.png) |
 
 ---
 
