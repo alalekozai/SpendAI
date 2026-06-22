@@ -17,7 +17,8 @@ Soon
 |-----------|-------------|-----------|
 <img width="2048" height="1335" alt="1781045536272" src="https://github.com/user-attachments/assets/33a44c32-3aeb-49d9-a436-03ec34ef89e6" />
 
-) | ![Add](docs/screenshots/add-expense.png) | ![Analytics](docs/screenshots/analytics.png) |
+) <img width="2048" height="1335" alt="1781045536408" src="https://github.com/user-attachments/assets/89351fbd-15db-45d9-a55a-dc3bfef87d9b" />
+ | ![Analytics](docs/screenshots/analytics.png) |
 
 ---
 
